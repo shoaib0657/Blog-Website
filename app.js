@@ -4,16 +4,15 @@ dotenv.config()
 import express from 'express'
 import bodyParser from 'body-parser';
 import ejs from 'ejs'
-import _ from 'lodash'
 
 import { dbConnect } from './db.js';
 import { PostModel } from './models/post.model.js';
 
 dbConnect();
 
-const homeStartingContent = "Lacus vel facilisis volutpat est velit egestas dui id ornare. Semper auctor neque vitae tempus quam. Sit amet cursus sit amet dictum sit amet justo. Viverra tellus in hac habitasse. Imperdiet proin fermentum leo vel orci porta. Donec ultrices tincidunt arcu non sodales neque sodales ut. Mattis molestie a iaculis at erat pellentesque adipiscing. Magnis dis parturient montes nascetur ridiculus mus mauris vitae ultricies. Adipiscing elit ut aliquam purus sit amet luctus venenatis lectus. Ultrices vitae auctor eu augue ut lectus arcu bibendum at. Odio euismod lacinia at quis risus sed vulputate odio ut. Cursus mattis molestie a iaculis at erat pellentesque adipiscing.";
-const aboutContent = "Hac habitasse platea dictumst vestibulum rhoncus est pellentesque. Dictumst vestibulum rhoncus est pellentesque elit ullamcorper. Non diam phasellus vestibulum lorem sed. Platea dictumst quisque sagittis purus sit. Egestas sed sed risus pretium quam vulputate dignissim suspendisse. Mauris in aliquam sem fringilla. Semper risus in hendrerit gravida rutrum quisque non tellus orci. Amet massa vitae tortor condimentum lacinia quis vel eros. Enim ut tellus elementum sagittis vitae. Mauris ultrices eros in cursus turpis massa tincidunt dui.";
-const contactContent = "Scelerisque eleifend donec pretium vulputate sapien. Rhoncus urna neque viverra justo nec ultrices. Arcu dui vivamus arcu felis bibendum. Consectetur adipiscing elit duis tristique. Risus viverra adipiscing at in tellus integer feugiat. Sapien nec sagittis aliquam malesuada bibendum arcu vitae. Consequat interdum varius sit amet mattis. Iaculis nunc sed augue lacus. Interdum posuere lorem ipsum dolor sit amet consectetur adipiscing elit. Pulvinar elementum integer enim neque. Ultrices gravida dictum fusce ut placerat orci nulla. Mauris in aliquam sem fringilla ut morbi tincidunt. Tortor posuere ac ut consequat semper viverra nam libero.";
+const homeStartingContent = "Welcome to My Blog! Explore a world of thoughts, stories, and experiences. Here, you'll find a collection of posts that cover a variety of topics – from everyday adventures to profound reflections. Join me on this journey of words and ideas. Feel free to read, comment, and share your own thoughts. Let's create a vibrant community of storytellers and readers together!";
+const aboutContent = "Hello there! I'm Shoaib, the creator of this blog. I believe in the power of storytelling to connect people and inspire change. Here, you'll find a glimpse into my world – my passions, experiences, and the lessons life has taught me. Thank you for joining me on this journey. Feel free to explore, connect, and share your own stories. Together, let's make this digital space a source of inspiration and connection.";
+const contactContent = "I would love to hear from you! Whether you have a question, a suggestion, or just want to say hello, feel free to reach out. Your feedback is invaluable in making this blog a better place. You can contact me via email at mdshoaibansari0307@gmail.com or connect with me on social media. Looking forward to connecting with you!";
 
 const app = express();
 
@@ -22,17 +21,24 @@ app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
-let posts = [];
+app.get("/", async function (req, res) {
 
-app.get("/", function (req, res) {
-  res.render("home", { startingContent: homeStartingContent, posts: posts });
+  try {
+    const posts = await PostModel.find({});
+    res.render("home", { startingContent: homeStartingContent, posts: posts });
+  }
+  catch (err) {
+    console.log(err);
+  }
+
 })
 
 app.get("/about", function (req, res) {
   res.render("about", { aboutContent: aboutContent });
 })
 
-app.post("/", function(req, res) {
+//change this to just a href
+app.post("/", function (req, res) {
   res.redirect("/compose");
 })
 
@@ -40,37 +46,38 @@ app.get("/contact", function (req, res) {
   res.render("contact", { contactContent: contactContent });
 })
 
-app.get("/compose", function(req, res) {
+// see if change required
+app.get("/compose", function (req, res) {
   res.render("compose");
 })
 
-app.post("/compose", function(req, res) {
+app.post("/compose", async function (req, res) {
 
   const post = new PostModel({
     title: req.body.postTitle,
     content: req.body.postBody
   });
 
-  post.save();
-
-  posts.push(post);
+  await post.save();
 
   res.redirect("/");
 
 })
 
-app.get("/posts/:postName", function(req, res) {
+app.get("/posts/:postId", async function (req, res) {
 
-  let requestedTitle = _.lowerCase(req.params.postName);
+  const requestedPostId = req.params.postId;
 
-  posts.forEach(function(post) {
-
-    if(_.lowerCase(post.title) === requestedTitle)
-    {
-      res.render("post", { title: post.title, content: post.content });
-    }
-
-  })
+  try {
+    const post = await PostModel.findById(requestedPostId);
+    res.render("post", {
+      title: post.title,
+      content: post.content
+    });
+  }
+  catch (err) {
+    console.log(err);
+  }
 
 })
 
